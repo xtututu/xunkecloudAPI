@@ -25,6 +25,7 @@ services:
     volumes:
       - ./data:/data
       - ./logs:/app/logs
+      - ./web:/app/web
     environment:
 #      - SQL_DSN=postgresql://root:123456@postgres:5432/new-api # ⚠️ IMPORTANT: Change the password in production!
       - SQL_DSN=root:z8f02000X@tcp(mysql:3306)/yishangyun-api  # Point to the mysql service, uncomment if using MySQL
