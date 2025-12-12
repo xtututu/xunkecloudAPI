@@ -1,5 +1,5 @@
 # Go 后端构建阶段
-FROM golang:alpine AS backend-builder
+FROM golang:1.25-alpine AS backend-builder
 ENV GO111MODULE=on
 ENV CGO_ENABLED=0
 # 使用国内 Go 代理加速依赖下载
@@ -12,15 +12,33 @@ ENV GOARCH=${TARGETARCH:-amd64}
 
 WORKDIR /build
 
-# 复制 Go 依赖配置并下载
-ADD go.mod go.sum ./
-RUN go mod download
+# 复制 Go 依赖配置
+COPY go.mod go.sum ./
 
-# 复制所有项目文件（包括用户本地构建好的 web/dist）
-COPY . .
+# 下载依赖并使用缓存挂载优化
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
 
-# 编译 Go 程序（注入版本信息）
-RUN go build -ldflags "-s -w -X 'xunkecloudAPI/common.Version=$(cat VERSION)'" -o new-api
+# 复制项目源代码（排除不必要的文件）
+COPY common/ ./common/
+COPY constant/ ./constant/
+COPY controller/ ./controller/
+COPY dto/ ./dto/
+COPY docs/ ./docs/
+COPY logger/ ./logger/
+COPY middleware/ ./middleware/
+COPY model/ ./model/
+COPY relay/ ./relay/
+COPY router/ ./router/
+COPY service/ ./service/
+COPY setting/ ./setting/
+COPY types/ ./types/
+COPY web/dist/ ./web/dist/
+COPY main.go ./
+COPY VERSION ./
+
+# 编译 Go 程序（注入版本信息）并使用构建缓存
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
+    go build -ldflags "-s -w -X 'xunkecloudAPI/common.Version=$(cat VERSION)'" -o new-api
 
 
 # 最终运行阶段

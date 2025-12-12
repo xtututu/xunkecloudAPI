@@ -6,3 +6,51 @@
 Makefile
 .eslintcache
 .gocache
+
+# 构建产物
+*.o
+*.a
+*.so
+main
+new-api
+
+# 日志文件
+logs/
+*.log
+
+# 数据库文件
+*.db
+*.sqlite
+
+# 测试文件
+*_test.go
+
+# IDE配置
+.idea/
+*.swp
+*.swo
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 临时文件
+/tmp/
+*.tmp
+*.temp
+
+# 前端构建文件（仅排除源代码，保留dist）
+web/src/
+web/node_modules/
+web/.eslintrc.cjs
+web/bun.lock
+web/jsconfig.json
+web/package.json
+web/vite.config.js
+web/index.html
+
+# 其他不必要的文件
+files/
+electron/
+json_to_formdata_converter.py
+new-api.service
