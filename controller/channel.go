@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"xunkecloudAPI/common"
 	"xunkecloudAPI/constant"
@@ -926,7 +927,10 @@ func FetchModels(c *gin.Context) {
 		baseURL = constant.ChannelBaseURLs[req.Type]
 	}
 
-	client := &http.Client{}
+	// 设置30秒超时
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
 	url := fmt.Sprintf("%s/v1/models", baseURL)
 
 	request, err := http.NewRequest("GET", url, nil)

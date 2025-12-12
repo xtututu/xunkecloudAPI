@@ -34,15 +34,14 @@ func checkRedirect(req *http.Request, via []*http.Request) error {
 }
 
 func InitHttpClient() {
+	timeout := time.Duration(common.RelayTimeout) * time.Second
+	// 如果没有设置超时，默认使用30秒
 	if common.RelayTimeout == 0 {
-		httpClient = &http.Client{
-			CheckRedirect: checkRedirect,
-		}
-	} else {
-		httpClient = &http.Client{
-			Timeout:       time.Duration(common.RelayTimeout) * time.Second,
-			CheckRedirect: checkRedirect,
-		}
+		timeout = 30 * time.Second
+	}
+	httpClient = &http.Client{
+		Timeout:       timeout,
+		CheckRedirect: checkRedirect,
 	}
 }
 
@@ -65,7 +64,15 @@ func ResetProxyClientCache() {
 // NewProxyHttpClient 创建支持代理的 HTTP 客户端
 func NewProxyHttpClient(proxyURL string) (*http.Client, error) {
 	if proxyURL == "" {
-		return http.DefaultClient, nil
+		// 创建一个带有默认超时的客户端，而不是使用http.DefaultClient
+		timeout := time.Duration(common.RelayTimeout) * time.Second
+		if common.RelayTimeout == 0 {
+			timeout = 30 * time.Second
+		}
+		return &http.Client{
+			Timeout:       timeout,
+			CheckRedirect: checkRedirect,
+		}, nil
 	}
 
 	proxyClientLock.Lock()
@@ -88,7 +95,12 @@ func NewProxyHttpClient(proxyURL string) (*http.Client, error) {
 			},
 			CheckRedirect: checkRedirect,
 		}
-		client.Timeout = time.Duration(common.RelayTimeout) * time.Second
+		// 如果没有设置超时，默认使用30秒
+		timeout := time.Duration(common.RelayTimeout) * time.Second
+		if common.RelayTimeout == 0 {
+			timeout = 30 * time.Second
+		}
+		client.Timeout = timeout
 		proxyClientLock.Lock()
 		proxyClients[proxyURL] = client
 		proxyClientLock.Unlock()
@@ -122,7 +134,12 @@ func NewProxyHttpClient(proxyURL string) (*http.Client, error) {
 			},
 			CheckRedirect: checkRedirect,
 		}
-		client.Timeout = time.Duration(common.RelayTimeout) * time.Second
+		// 如果没有设置超时，默认使用30秒
+		timeout := time.Duration(common.RelayTimeout) * time.Second
+		if common.RelayTimeout == 0 {
+			timeout = 30 * time.Second
+		}
+		client.Timeout = timeout
 		proxyClientLock.Lock()
 		proxyClients[proxyURL] = client
 		proxyClientLock.Unlock()

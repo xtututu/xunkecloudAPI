@@ -89,8 +89,13 @@ func UploadFile(c *gin.Context) {
 		// 通过URL下载文件
 		// 创建一个自定义的HTTP客户端，跳过SSL证书验证，并处理重定向
 		client := &http.Client{
+			Timeout: 30 * time.Second, // 设置30秒超时
 			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+				TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
+				MaxIdleConns:          100,
+				IdleConnTimeout:       90 * time.Second,
+				TLSHandshakeTimeout:   10 * time.Second,
+				ExpectContinueTimeout: 1 * time.Second,
 			},
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
 				// 确保重定向请求也携带相同的请求头
