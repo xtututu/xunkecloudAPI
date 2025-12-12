@@ -1,8 +1,6 @@
 package controller
 
 import (
-	"crypto/md5"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,9 +9,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
+
+	"xunkecloudAPI/common"
 )
 
 // ImageUploadRequest 图片上传请求结构
@@ -75,7 +74,7 @@ func UploadImage(c *gin.Context) {
 	}
 
 	// 生成唯一文件名
-	filename := generateUniqueFilename() + ext
+	filename := common.GenerateUniqueFilename() + ext
 	fullPath := filepath.Join("./images", filename)
 
 	// 创建目录（如果不存在）
@@ -216,11 +215,4 @@ func getFileExtensionFromContentType(contentType string) string {
 	return typeMap[strings.ToLower(contentType)]
 }
 
-// 辅助函数：生成唯一文件名
-func generateUniqueFilename() string {
-	// 使用时间戳和随机字符串生成唯一文件名
-	timestamp := time.Now().UnixNano()
-	hasher := md5.New()
-	hasher.Write([]byte(fmt.Sprintf("%d", timestamp)))
-	return hex.EncodeToString(hasher.Sum(nil))
-}
+

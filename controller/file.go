@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+
+	"xunkecloudAPI/common"
 )
 
 // FileUploadRequest 文件上传请求结构
@@ -39,7 +41,7 @@ func UploadFile(c *gin.Context) {
 		}
 
 		// 生成唯一文件名
-		filename := generateUniqueFilename() + ext
+		filename := common.GenerateUniqueFilename() + ext
 		fullPath := filepath.Join("./files", filename)
 
 		// 创建目录（如果不存在）
@@ -87,15 +89,18 @@ func UploadFile(c *gin.Context) {
 	err = c.ShouldBindJSON(&req)
 	if err == nil && req.FileURL != "" {
 		// 通过URL下载文件
-		// 创建一个自定义的HTTP客户端，跳过SSL证书验证，并处理重定向
+		// 创建一个优化的HTTP客户端，跳过SSL证书验证，并处理重定向
 		client := &http.Client{
-			Timeout: 30 * time.Second, // 设置30秒超时
+			Timeout: 60 * time.Second, // 设置60秒超时，适应较大文件下载
 			Transport: &http.Transport{
 				TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
 				MaxIdleConns:          100,
+				MaxIdleConnsPerHost:   50,  // 增加每个主机的最大空闲连接数
+				MaxConnsPerHost:       100, // 增加每个主机的最大连接数
 				IdleConnTimeout:       90 * time.Second,
-				TLSHandshakeTimeout:   10 * time.Second,
-				ExpectContinueTimeout: 1 * time.Second,
+				TLSHandshakeTimeout:   20 * time.Second,
+				ExpectContinueTimeout: 5 * time.Second,
+				ResponseHeaderTimeout: 30 * time.Second,
 			},
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
 				// 确保重定向请求也携带相同的请求头
@@ -103,6 +108,7 @@ func UploadFile(c *gin.Context) {
 				return nil
 			},
 		}
+		log.Printf("开始从URL下载文件: %s", req.FileURL)
 		// 创建请求并添加适当的请求头
 		httpReq, err := http.NewRequest("GET", req.FileURL, nil)
 		if err != nil {
@@ -120,15 +126,17 @@ func UploadFile(c *gin.Context) {
 		// 添加Connection头
 		httpReq.Header.Set("Connection", "keep-alive")
 		// 发送请求
+		log.Printf("正在发送HTTP请求到: %s", req.FileURL)
 		resp, err := client.Do(httpReq)
 		if err != nil {
 			log.Printf("下载文件失败: %v", err)
 			c.JSON(http.StatusOK, gin.H{
-				"message": "下载文件失败",
+				"message": "下载文件失败: " + err.Error(),
 				"success": false,
 			})
 			return
 		}
+		log.Printf("HTTP请求成功，状态码: %d", resp.StatusCode)
 		defer resp.Body.Close()
 
 		// 检查响应状态
@@ -199,7 +207,7 @@ func UploadFile(c *gin.Context) {
 		}
 
 		// 生成唯一文件名
-		filename := generateUniqueFilename() + ext
+		filename := common.GenerateUniqueFilename() + ext
 		fullPath := filepath.Join("./files", filename)
 
 		// 创建目录（如果不存在）
@@ -224,7 +232,9 @@ func UploadFile(c *gin.Context) {
 		}
 		defer outFile.Close()
 
-		if _, err = io.Copy(outFile, resp.Body); err != nil {
+		// 使用缓冲IO提高大文件写入速度
+		buf := make([]byte, 8192*4) // 32KB缓冲区
+		if _, err = io.CopyBuffer(outFile, resp.Body, buf); err != nil {
 			log.Printf("保存文件失败: %v", err)
 			c.JSON(http.StatusOK, gin.H{
 				"message": "保存文件失败",

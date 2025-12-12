@@ -2,7 +2,9 @@ package common
 
 import (
 	crand "crypto/rand"
+	"crypto/md5"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -338,4 +340,13 @@ func BuildURL(base string, endpoint string) string {
 		return base + endpoint
 	}
 	return u.ResolveReference(ref).String()
+}
+
+// GenerateUniqueFilename 生成唯一文件名
+func GenerateUniqueFilename() string {
+	// 使用时间戳和随机字符串生成唯一文件名
+	timestamp := time.Now().UnixNano()
+	hasher := md5.New()
+	hasher.Write([]byte(fmt.Sprintf("%d", timestamp)))
+	return hex.EncodeToString(hasher.Sum(nil))
 }
